@@ -1,15 +1,6 @@
 ---
 - hosts: localhost
   tasks:
-    - name: git reset
-      command: rm -rf {{ workdir }}
-    - name: make project dir
-      command: mkdir -p {{workdir}}
-    - name: git pull
-      git:
-        repo: "{{git_settings.repo_url}}" 
-        dest: "{{workdir}}"
-        version: "{{branch}}"
     - name: docker login
       shell: echo {{ docker_cred.password }} | docker login -u {{docker_cred.login}} --password-stdin {{ docker_cred.registry }}
     - name: docker build
