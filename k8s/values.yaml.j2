@@ -1,0 +1,17 @@
+replicaCount: {{ helm.vls.replicaCount }}
+application:
+  environment: {{ helm.vls.application.environment }}
+  credentials:
+    {{ helm.vls.application.credentials | to_nice_yaml(4) | trim | indent(4) }}
+image:
+  {{ helm.vls.image | to_nice_yaml(indent=2) | trim | indent(2) }}
+imagePullSecrets:
+  - name: {{ helm.vls.imagePullSecrets }}
+service:
+  {{ helm.vls.service | to_nice_yaml(indent=2) | trim | indent(2) }}
+ingress:
+  enabled: {{ helm.vls.ingress.enabled }}
+  annotations:
+    {{ helm.vls.ingress.annotations | to_nice_yaml(indent=2) | trim | indent(4) }} 
+  hosts:
+    {{ helm.vls.ingress.hosts | to_nice_yaml(indent=2) | trim | indent(4) }} 

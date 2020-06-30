@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "isitok.fullname" . }}
+  labels:
+    {{- include "isitok.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "isitok.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "isitok.selectorLabels" . | nindent 8 }}
+    spec:
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{.Values.image.registry}}/{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          livenessProbe:
+            tcpSocket: { port: {{ .Values.service.target_port }} }
+          env:
+            - name: BASE_USERNAME
+              value: "{{ .Values.application.credentials.base_username }}"
+            - name: BASE_PASSWORD
+              value: "{{ .Values.application.credentials.base_password }}"
+            - name: REDIS_URL
+              value: "{{ .Values.application.credentials.redis_url }}"

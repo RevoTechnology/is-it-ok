@@ -1,0 +1,71 @@
+---
+- hosts: localhost
+  tasks:
+    - name: git reset
+      command: rm -rf {{ workdir }}
+    - name: make project dir
+      command: mkdir -p {{workdir}}
+    - name: git pull
+      git:
+        repo: "{{git_settings.repo_url}}" 
+        dest: "{{workdir}}"
+        version: "{{branch}}"
+    - name: docker login
+      shell: echo {{ docker_cred.password }} | docker login -u {{docker_cred.login}} --password-stdin {{ docker_cred.registry }}
+    - name: docker build
+      command: 
+        chdir: "{{workdir}}"
+        cmd: docker build --no-cache --force-rm --tag {{ docker_cred.registry }}/{{docker.organization}}/{{docker.image_name}}:{{branch}} ./
+    - name: docker push
+      command:
+        chdir: "{{workdir}}"
+        cmd: docker push {{ docker_cred.registry }}/{{docker.organization}}/{{docker.image_name}}:{{branch}}
+- hosts: 185.22.63.248
+  tasks:
+    - name: git reset
+      command: rm -rf {{ workdir }}
+    - name: git pull
+      git: 
+        repo: "{{git_settings.repo_url}}" 
+        dest: "{{workdir}}"
+        version: "{{branch}}"
+      become: yes
+      become_user: revodeployer
+    - name: helm pack
+      command: 
+        chdir: "{{chartsdir}}"
+        cmd: tar czf {{workdir}}/{{app_name}}-{{harbor.version}}.tgz .
+    - name: helm push
+      command: helm push --force --username={{harbor.username}} --password={{harbor.password}} {{workdir}}/{{app_name}}-{{harbor.version}}.tgz {{registry_name}}
+      become: yes
+      become_user: revodeployer
+    - name: helm update
+      command: helm repo update
+      become: yes
+    - name: Render chart values
+      template:
+          dest: "{{ chartsdir }}/values.yaml"
+          src: ./k8s/values.yaml.j2
+          force: yes
+    - name: helm update app
+      command: helm upgrade -f {{ chartsdir }}/values.yaml --install --cleanup-on-fail --recreate-pods --force --password={{harbor.password}} --username={{harbor.username}} {{app_name}} --version {{ harbor.version }} {{registry_name}}/{{app_name}}
+      become: yes
+    # SUCCESS DEPLOY INFO
+    - name: get ingress info
+      shell: kubectl get ingress -o custom-columns=NAME:.metadata.name,HOSTS:.spec.rules[0].host | grep {{ app_name }}
+      register: ingress
+      become: yes
+      ignore_errors: True
+    - name: get domain from ingress info
+      command: "python -c 'import sys; print(sys.argv[-1]);' {{ ingress.stdout_lines[0] }}"
+      register: domain
+      ignore_errors: True
+    - name: get hostname
+      command: hostname
+      register: hostname
+      ignore_errors: True
+    - name: Host info
+      debug:
+        msg: HOST => {{ hostname.stdout_lines[0] }}  DOMAIN => {{ domain.stdout_lines[0] }}
+      when: hostname.stdout_lines is defined
+      ignore_errors: True
