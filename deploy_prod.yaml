@@ -5,11 +5,9 @@
       shell: echo {{ docker_cred.password }} | docker login -u {{docker_cred.login}} --password-stdin {{ docker_cred.registry }}
     - name: docker build
       command: 
-        chdir: "{{workdir}}"
         cmd: docker build --no-cache --force-rm --tag {{ docker_cred.registry }}/{{docker.organization}}/{{docker.image_name}}:{{branch}} ./
     - name: docker push
       command:
-        chdir: "{{workdir}}"
         cmd: docker push {{ docker_cred.registry }}/{{docker.organization}}/{{docker.image_name}}:{{branch}}
 - hosts: master.k8s.rv-prod.ru 
   tasks:
