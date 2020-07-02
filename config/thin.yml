@@ -1,0 +1,7 @@
+pid: tmp/pids/thin.pid
+port: 3000
+address: 0.0.0.0
+log: log/thin.log
+max_conns: 1024
+max_persistent_conns: 512
+tag: soloviev
