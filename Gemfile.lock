@@ -1,7 +1,6 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    byebug (11.1.3)
     daemons (1.3.1)
     eventmachine (1.2.7)
     oj (3.10.6)
@@ -9,6 +8,8 @@ GEM
     redis (4.2.1)
     roda (3.33.0)
       rack
+    roda-http-auth (0.2.0)
+      roda (>= 2.0, < 4.0)
     thin (1.7.2)
       daemons (~> 1.0, >= 1.0.9)
       eventmachine (~> 1.0, >= 1.0.4)
@@ -18,10 +19,10 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  byebug
   oj
   redis
   roda
+  roda-http-auth
   thin
 
 BUNDLED WITH

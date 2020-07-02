@@ -4,7 +4,6 @@ require 'roda'
 require 'redis'
 require 'json'
 require 'oj'
-require 'byebug'
 ##
 # class App is base roda class like rack app
 class App < Roda
@@ -32,7 +31,7 @@ class App < Roda
   end
 
   private
-  
+
   def body
     Oj.load(request.body.read, symbol_keys: true)
   end
