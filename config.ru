@@ -19,6 +19,7 @@ class App < Roda
 
   # ROUTES
   route do |r|
+    http_auth
     r.on '' do
       r.post do
         { success: true }.to_json if store_key!
@@ -30,6 +31,8 @@ class App < Roda
     end
   end
 
+  private
+  
   def body
     Oj.load(request.body.read, symbol_keys: true)
   end
