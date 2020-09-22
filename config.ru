@@ -41,13 +41,14 @@ class App < Roda
     http_auth
     r.on '' do
       r.post do
-        Metrics.increment('revo.is-it-ok.count', tags: ['success:true'])
+        Metrics.increment('revo.is-it-ok.post')
         { success: true }.to_json if store_key!
       end
 
       r.get do
-        Metrics.increment('revo.is-it-ok.count', tags: ['success:false'])
-        { success: true, find: key_alive?(r.params['key']) }.to_json
+        alive = key_alive?(r.params['key'])
+        Metrics.increment('revo.is-it-ok.get', tags: ["success:#{alive}"])
+        { success: true, find: alive }.to_json
       end
     end
   end
