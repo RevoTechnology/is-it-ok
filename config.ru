@@ -4,28 +4,55 @@ require 'roda'
 require 'redis'
 require 'json'
 require 'oj'
-##
+require 'ddtrace'
+require 'datadog/statsd'
+
+Datadog.configure do |c|
+  c.use :rack, analytics_enabled: true, service_name: 'os-it-ok'
+  c.use :redis
+end
+
+# rubocop:disable Style/MethodMissingSuper, Style/MissingRespondToMissing, Style/ModuleFunction
+# Module for application monitoring
+module Metrics
+  extend self
+
+  DATADOG_HOST = ENV.fetch('DATADOG_HOST', 'localhost')
+  DATADOG_PORT = ENV.fetch('DATADOG_HOST', 8125)
+
+  def method_missing(method, *args)
+    statsd.send(method, *args)
+  end
+
+  def statsd
+    @statsd ||= Datadog::Statsd.new(DATADOG_HOST, DATADOG_PORT)
+  end
+end
+# rubocop:enable Style/MethodMissingSuper, Style/MissingRespondToMissing, Style/ModuleFunction
+
 # class App is base roda class like rack app
 class App < Roda
   BASE_AUTH = [ENV.fetch('BASE_USERNAME', 'lol'), ENV.fetch('BASE_PASSWORD', 'kek')].freeze
   REDIS_URL = ENV.fetch('REDIS_URL')
-
   # PLUGINS
-  plugin :default_headers,
-         'Content-Type' => 'application/json'
-  plugin :http_auth, authenticator: proc { |user, pass| BASE_AUTH == [user, pass] },
-    unauthorized: ->(_request) { { errors: ['unauthorized'] }.to_json }
+  plugin :default_headers, 'Content-Type' => 'application/json'
+  plugin :http_auth,
+         authenticator: proc { |user, pass| BASE_AUTH == [user, pass] },
+         unauthorized: ->(_request) { { errors: ['unauthorized'] }.to_json }
 
   # ROUTES
   route do |r|
     http_auth
     r.on '' do
       r.post do
+        Metrics.increment('revo.is-it-ok.post')
         { success: true }.to_json if store_key!
       end
 
       r.get do
-        { success: true, find: key_alive?(r.params['key']) }.to_json
+        alive = key_alive?(r.params['key'])
+        Metrics.increment('revo.is-it-ok.get', tags: ["success:#{alive}"])
+        { success: true, find: alive }.to_json
       end
     end
   end
